@@ -48,6 +48,7 @@ $router->get('/key', function () use ($router) {
     
     //print_r($key);
 
+    
     $nl = '<br>';
     echo "Private Key:";    
     echo '<pre><code>';
@@ -163,83 +164,113 @@ $router->get('/key', function () use ($router) {
     //return $privatekey;
 });
 
+
+function bchexdec($hex)
+{
+    $len = strlen($hex);
+    $dec=0;
+    for ($i = 1; $i <= $len; $i++)
+        $dec = bcadd($dec, bcmul(strval(hexdec($hex[$i - 1])), bcpow('16', strval($len - $i))));
+    
+    return $dec;
+}
+
 $router->get('/tes', function () use ($router) {
     
         $nl = "<br>";
-        /*$headerPrivKey = "-----BEGIN RSA PRIVATE KEY-----";
-        $trailerPrivKey = "\n-----END RSA PRIVATE KEY-----";
-        $trailerPrivKey2 = "-----END RSA PRIVATE KEY-----";
-        $headerPubKey = "-----BEGIN RSA PUBLIC KEY-----";
-        $trailerPubKey = "\n-----END RSA PUBLIC KEY-----";
-        $trailerPubKey2 = "-----END RSA PUBLIC KEY-----";
-        define('CRYPT_RSA_EXPONENT', 65537);*/        
-        $rsa = new RSA();
-        $rsa->setPrivateKeyFormat(RSA::PRIVATE_FORMAT_XML);
-        $rsa->setPublicKeyFormat(RSA::PUBLIC_FORMAT_RAW);
-    
+        //generate Key
+        define('CRYPT_RSA_EXPONENT', 65537);       
+        $rsa = new RSA();    
         $key = $rsa->createKey(1024);
+        extract($key);
+        $rsa->setPrivateKey($privatekey);
+        $n = new BigInteger($rsa->modulus);
+        $d = new BigInteger($rsa->exponent);
+        $e = new BigInteger(65537);
+        $n =$n->toHex(true);
+        $d =$d->toHex(true);
+        $e = $e->toHex(true);
 
-        $publicKey = $key['publickey'];
-        $privateKey = simplexml_load_string($key['privatekey']) or die("Error: Cannot create object");
-
-        $n = $publicKey['n'];
-        $e = $publicKey['e'];
-        $d = $privateKey->D;
-
-        $nHex = new BigInteger($n);
-        $eHex = new BigInteger($e);
-        //$dHex = new BigInteger($d);
-        $nHex = $nHex->toHex();
-        $eHex = $eHex->toHex();
-        //$dHex = $d->toHex();
-
-        echo $nl.$nl;        
-        echo "pub mentah:";
+        //encrypt
+        $rsa->setEncryptionMode(RSA::ENCRYPTION_PKCS1);        
+        $plain = "budi bermain bola bersama teman-teman";    
+        echo $nl;        
+        echo "rsa:";
         echo '<pre><code>';
-        echo print_r($publicKey);
-        echo '</code></pre>';
+        echo print_r($rsa);
+        echo '</code></pre>';  
+        $rsa->loadKey(array('publicExponent' => new BigInteger(bchexdec($e)), 'modulus' => new BigInteger(bchexdec($n))));                
+        $chiper = $rsa->encrypt($plain);   
+               
+        $rsa->loadKey(array('publicExponent' => new BigInteger(bchexdec($e)), 'exponent' => new BigInteger(bchexdec($d)), 'modulus' => new BigInteger(bchexdec($n))));                
+        $decrypted = $rsa->decrypt($chiper);    
 
-        echo $nl.$nl;        
-        echo "priv mentah:";
-        echo '<pre><code>';
-        echo print_r($privateKey);
-        echo '</code></pre>';
+        //decrypt  
 
-        echo $nl.$nl;        
-        echo "n (Plain):";
+        //$rsa->setPublicKey($publickey);        
+        //$rsa->loadKey($publickey);        
+       // $decrypted = $rsa->decrypt($chiper);
+        /*
+       echo "before hex: ".$rsa->modulus;
+       echo $nl;
+       echo "after hex: ".$n;
+       echo $nl;        
+       echo "before hex: ".bchexdec($n);
+      
+
+       echo $nl;        
+       echo "n:";
+       echo '<pre><code>';
+       echo print_r($rsa);
+       echo '</code></pre>';  
+ */
+        echo $nl;        
+        echo "n:";
         echo '<pre><code>';
         echo $n;
-        echo '</code></pre>';
-    
-        echo $nl.$nl;        
-        echo "e (Plain):";
+        echo '</code></pre>';  
+        
+        echo $nl;        
+        echo "nlen:";
+        echo '<pre><code>';
+        echo strlen($n);
+        echo '</code></pre>';  
+
+        echo $nl;        
+        echo "d:";
+        echo '<pre><code>';
+        echo $d;
+        echo '</code></pre>'; 
+        
+        echo $nl;        
+        echo "dlen:";
+        echo '<pre><code>';
+        echo strlen($d);
+        echo '</code></pre>'; 
+
+        echo $nl;        
+        echo "e:";
         echo '<pre><code>';
         echo $e;
-        echo '</code></pre>';
-    
-        echo $nl.$nl;        
-        echo "d (Plain):";
-        echo '<pre><code>';
-        echo $d;    
-        echo '</code></pre>';
+        echo '</code></pre>'; 
 
-        echo $nl.$nl;        
-        echo "n (Hex):";
+        echo $nl;        
+        echo "plain:";
         echo '<pre><code>';
-        echo $nHex;
-        echo '</code></pre>';
-    
-        echo $nl.$nl;        
-        echo "e (Hex):";
-        echo '<pre><code>';
-        echo $eHex;
-        echo '</code></pre>';
-    
-        echo $nl.$nl;        
-        echo "d (Hex):";
-        echo '<pre><code>';
-        //echo $dHex;    
-        echo '</code></pre>';
+        echo $plain;
+        echo '</code></pre>'; 
 
-    
+        echo $nl;        
+        echo "chiper:";
+        echo '<pre><code>';
+        echo $chiper;
+        echo '</code></pre>'; 
+        
+        echo $nl;        
+        echo "decrypted:";
+        echo '<pre><code>';
+        echo $decrypted;
+        echo '</code></pre>'; 
+        
+        
     });
